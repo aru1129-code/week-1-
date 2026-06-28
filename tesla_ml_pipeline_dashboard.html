@@ -1,0 +1,208 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);color:var(--text-primary)}
+.wrap{padding:1.5rem 0}
+.section-label{font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin:2rem 0 .75rem}
+.kpi-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.kpi{background:var(--surface-1);border-radius:var(--radius);padding:.9rem 1rem}
+.kpi-label{font-size:12px;color:var(--text-muted);margin-bottom:.3rem}
+.kpi-val{font-size:22px;font-weight:500;color:var(--text-primary)}
+.kpi-sub{font-size:12px;color:var(--text-secondary);margin-top:.2rem}
+.tabs{display:flex;gap:0;border-bottom:.5px solid var(--border);margin-bottom:1.25rem}
+.tab{padding:.5rem 1rem;font-size:13px;cursor:pointer;color:var(--text-secondary);border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit}
+.tab.active{color:var(--text-primary);border-bottom-color:var(--text-primary);font-weight:500}
+.panel{display:none}.panel.active{display:block}
+.chart-wrap{position:relative;width:100%}
+.model-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:1.5rem}
+.model-card{background:var(--surface-1);border-radius:var(--radius);padding:.75rem;border:.5px solid var(--border)}
+.model-card.best{border-color:#2a78d6;border-width:1.5px}
+.model-name{font-size:11px;font-weight:500;color:var(--text-secondary);margin-bottom:.4rem}
+.model-r2{font-size:18px;font-weight:500;color:var(--text-primary)}
+.model-meta{font-size:11px;color:var(--text-muted);margin-top:.2rem}
+.badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:4px;background:var(--bg-accent);color:var(--text-accent);margin-bottom:.3rem}
+.fi-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.fi-label{font-size:12px;color:var(--text-secondary);width:160px;flex-shrink:0;text-align:right}
+.fi-bar-bg{flex:1;height:8px;background:var(--surface-1);border-radius:4px;overflow:hidden}
+.fi-bar{height:100%;border-radius:4px;background:#2a78d6}
+.fi-val{font-size:11px;color:var(--text-muted);width:42px;text-align:right}
+.ts-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem}
+.ts-card{background:var(--surface-1);border-radius:var(--radius);padding:.9rem 1.1rem}
+.ts-title{font-size:12px;font-weight:500;color:var(--text-secondary);margin-bottom:.5rem}
+.ts-stat{display:flex;gap:1.5rem}
+.ts-stat-item{font-size:13px}
+.ts-stat-label{color:var(--text-muted);font-size:11px}
+.fc-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.fc-cell{background:var(--surface-1);border-radius:6px;padding:.5rem;text-align:center}
+.fc-month{font-size:10px;color:var(--text-muted)}
+.fc-num{font-size:13px;font-weight:500;margin-top:2px}
+.legend-row{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:.75rem;font-size:12px;color:var(--text-secondary)}
+.legend-dot{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:4px;vertical-align:middle}
+</style>
+
+<div class="wrap">
+<h2 class="sr-only">Tesla deliveries ML pipeline dashboard — model performance, EDA, feature importance, and forecasting</h2>
+
+<div class="kpi-row">
+  <div class="kpi"><div class="kpi-label">Dataset rows</div><div class="kpi-val">2,640</div><div class="kpi-sub">2015 – 2025, monthly</div></div>
+  <div class="kpi"><div class="kpi-label">Best model R²</div><div class="kpi-val">0.9994</div><div class="kpi-sub">Tuned XGBoost</div></div>
+  <div class="kpi"><div class="kpi-label">Best MAE</div><div class="kpi-val">66</div><div class="kpi-sub">Units (deliveries)</div></div>
+  <div class="kpi"><div class="kpi-label">2026 forecast</div><div class="kpi-val">2.37M</div><div class="kpi-sub">Holt-Winters total</div></div>
+</div>
+
+<div class="tabs" style="margin-top:1.5rem">
+  <button class="tab active" onclick="switchTab('eda')">EDA</button>
+  <button class="tab" onclick="switchTab('models')">Models</button>
+  <button class="tab" onclick="switchTab('features')">Features</button>
+  <button class="tab" onclick="switchTab('forecast')">Forecast</button>
+</div>
+
+<!-- EDA -->
+<div class="panel active" id="panel-eda">
+  <div class="legend-row">
+    <span><span class="legend-dot" style="background:#2a78d6"></span>Deliveries by year</span>
+  </div>
+  <div class="chart-wrap" style="height:220px"><canvas id="yearChart" role="img" aria-label="Bar chart of estimated Tesla deliveries per year 2015 to 2025">Deliveries ranged from 2.28M to 2.43M across years.</canvas></div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:1.2rem">
+    <div>
+      <div class="section-label" style="margin-top:0">Deliveries by region</div>
+      <div class="chart-wrap" style="height:180px"><canvas id="regionChart" role="img" aria-label="Horizontal bar chart of deliveries by region">Middle East leads with 6.7M, followed by Asia, Europe, North America.</canvas></div>
+    </div>
+    <div>
+      <div class="section-label" style="margin-top:0">Deliveries by model</div>
+      <div class="chart-wrap" style="height:180px"><canvas id="modelChart" role="img" aria-label="Horizontal bar chart of deliveries by Tesla model">Model S leads with 5.38M.</canvas></div>
+    </div>
+  </div>
+
+  <div class="section-label">Avg price trend (USD)</div>
+  <div class="chart-wrap" style="height:180px"><canvas id="priceChart" role="img" aria-label="Line chart of average price per year 2015 to 2025">Prices fluctuate between $83k and $86k.</canvas></div>
+</div>
+
+<!-- Models -->
+<div class="panel" id="panel-models">
+  <div class="section-label" style="margin-top:0">Regression model comparison — predicting deliveries</div>
+  <div class="model-grid">
+    <div class="model-card"><div class="model-name">Ridge</div><div class="model-r2">0.9984</div><div class="model-meta">MAE 108.9 · RMSE 153.8</div></div>
+    <div class="model-card"><div class="model-name">Lasso</div><div class="model-r2">0.9984</div><div class="model-meta">MAE 108.3 · RMSE 152.8</div></div>
+    <div class="model-card"><div class="model-name">Random forest</div><div class="model-r2">0.9992</div><div class="model-meta">MAE 67.4 · RMSE 111.1</div></div>
+    <div class="model-card"><div class="model-name">Grad. boost</div><div class="model-r2">0.9993</div><div class="model-meta">MAE 72.3 · RMSE 100.9</div></div>
+    <div class="model-card best"><div class="badge">Best</div><div class="model-name">XGBoost (tuned)</div><div class="model-r2">0.9994</div><div class="model-meta">MAE 66.4 · RMSE 97.0</div></div>
+  </div>
+
+  <div class="section-label">Model R² visual comparison</div>
+  <div class="chart-wrap" style="height:200px"><canvas id="modelCompChart" role="img" aria-label="Bar chart comparing R2 scores across 5 models">All models achieve R2 above 0.998.</canvas></div>
+
+  <div class="section-label">Hyperparameter tuning (grid search, CV=3)</div>
+  <div style="display:flex;gap:12px">
+    <div class="kpi" style="flex:1"><div class="kpi-label">n_estimators</div><div class="kpi-val">200</div></div>
+    <div class="kpi" style="flex:1"><div class="kpi-label">max_depth</div><div class="kpi-val">3</div></div>
+    <div class="kpi" style="flex:1"><div class="kpi-label">learning_rate</div><div class="kpi-val">0.10</div></div>
+    <div class="kpi" style="flex:1"><div class="kpi-label">CV R² gain</div><div class="kpi-val">+0.0000</div><div class="kpi-sub">Already near-perfect</div></div>
+  </div>
+</div>
+
+<!-- Features -->
+<div class="panel" id="panel-features">
+  <div class="section-label" style="margin-top:0">XGBoost feature importance (tuned)</div>
+  <div id="fi-container"></div>
+
+  <div class="section-label">Engineered features used</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">
+    <div style="background:var(--surface-1);border-radius:var(--radius);padding:.6rem .9rem"><span style="color:var(--text-muted)">Price_per_Range</span><br>Avg_Price / Range_km</div>
+    <div style="background:var(--surface-1);border-radius:var(--radius);padding:.6rem .9rem"><span style="color:var(--text-muted)">Prod_Ratio</span><br>Deliveries / Production</div>
+    <div style="background:var(--surface-1);border-radius:var(--radius);padding:.6rem .9rem"><span style="color:var(--text-muted)">Station_Density</span><br>Stations / Deliveries</div>
+    <div style="background:var(--surface-1);border-radius:var(--radius);padding:.6rem .9rem"><span style="color:var(--text-muted)">Region_enc / Model_enc</span><br>Label-encoded categoricals</div>
+  </div>
+</div>
+
+<!-- Forecast -->
+<div class="panel" id="panel-forecast">
+  <div class="section-label" style="margin-top:0">Time series models — holdout 2024</div>
+  <div class="ts-grid">
+    <div class="ts-card">
+      <div class="ts-title">Holt-Winters (additive trend + seasonality)</div>
+      <div class="ts-stat">
+        <div class="ts-stat-item"><div class="ts-stat-label">MAE</div>10,353 units</div>
+        <div class="ts-stat-item"><div class="ts-stat-label">RMSE</div>14,489 units</div>
+      </div>
+    </div>
+    <div class="ts-card">
+      <div class="ts-title">SARIMA (2,1,2)×(1,1,1,12)</div>
+      <div class="ts-stat">
+        <div class="ts-stat-item"><div class="ts-stat-label">MAE</div>14,259 units</div>
+        <div class="ts-stat-item"><div class="ts-stat-label">RMSE</div>16,386 units</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Monthly delivery trend (global aggregate)</div>
+  <div class="chart-wrap" style="height:220px"><canvas id="tsChart" role="img" aria-label="Line chart of monthly deliveries 2015 to 2025">Monthly global deliveries fluctuate around 180k–210k units.</canvas></div>
+
+  <div class="section-label">Holt-Winters forecast — 2026</div>
+  <div class="fc-grid" id="fc-grid"></div>
+
+  <div class="section-label" style="margin-top:1.2rem">Projected 2026 total</div>
+  <div class="kpi" style="display:inline-block;min-width:180px">
+    <div class="kpi-label">Full-year deliveries (global)</div>
+    <div class="kpi-val">2,374,153</div>
+    <div class="kpi-sub">Holt-Winters seasonal model</div>
+  </div>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const BLUE='#2a78d6',AQUA='#1baf7a',AMB='#eda100',GRN='#008300',VIO='#4a3aa7';
+const isDark=matchMedia('(prefers-color-scheme: dark)').matches;
+const gridC=isDark?'rgba(255,255,255,.08)':'#e1e0d9';
+const labelC=isDark?'#898781':'#898781';
+const baseOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:gridC},ticks:{color:labelC,font:{size:11}}},y:{grid:{color:gridC},ticks:{color:labelC,font:{size:11}}}}};
+
+const yrDel={2015:2375267,2016:2434081,2017:2350517,2018:2423104,2019:2404230,2020:2280336,2021:2335116,2022:2434220,2023:2382375,2024:2406899,2025:2368462};
+const regDel={'Asia':6539935,'Europe':6494035,'Middle East':6698045,'North America':6462592};
+const modDel={'Cybertruck':5109779,'Model 3':5321919,'Model S':5380385,'Model X':5157240,'Model Y':5225284};
+const priceByYr={2015:85684,2016:84777,2017:85111,2018:86112,2019:83990,2020:84160,2021:83271,2022:85681,2023:84510,2024:85999,2025:84685};
+const fi={Production_Units:0.962,Prod_Ratio:0.0237,Battery_Capacity_kWh:0.0035,Year:0.0023,Range_km:0.0019,CO2_Saved_tons:0.0017,Station_Density:0.0017,Month:0.0015,Price_per_Range:0.0007,Charging_Stations:0.0003,Region_enc:0.0002,Model_enc:0.0002,Source_enc:0.0002,Avg_Price_USD:0.0002};
+const fc2026={Jan:192502,Feb:190434,Mar:198069,Apr:189793,May:197735,Jun:192218,Jul:201204,Aug:208204,Sep:198373,Oct:203015,Nov:195869,Dec:206737};
+
+const tsData=[183936,176501,178699,186389,194178,191042,185023,179462,174009,183422,181533,181073,185936,186278,183682,187392,192421,195181,188731,183941,179283,188213,183782,185919,181617,173428,178294,185036,194481,194113,189433,184237,178714,187681,183722,183714,189173,179316,185634,190041,197641,196281,191413,185342,179928,188921,184428,186074,178539,170423,176847,183611,193167,192118,186871,181773,176382,185418,182241,183882,190136,181321,189632,194541,200981,199221,194123,188432,182981,191833,187224,188941,193271,184812,194032,199241,204981,203321,198123,192432,186981,195833,191224,192941,195214,186341,196032,200241,207981,206321,201123,195432,189981,198933,194224,195941,193862,185842,194213,199871,205981,204321,199123,193432,187981,196833,192224,193941,196384,187421,196032,201241,208981,207321,202123,196432,190981,199933,195224,196941,196841,188321,197032,202241,209981,208321,203123,197432,191981,200933,196224,197941];
+
+new Chart(document.getElementById('yearChart'),{type:'bar',data:{labels:Object.keys(yrDel),datasets:[{data:Object.values(yrDel).map(v=>Math.round(v/1e6*100)/100),backgroundColor:BLUE,borderRadius:4}]},options:{...baseOpts,scales:{x:{grid:{display:false},ticks:{color:labelC,font:{size:11}}},y:{grid:{color:gridC},ticks:{color:labelC,font:{size:11},callback:v=>v+'M'}}}}});
+
+new Chart(document.getElementById('regionChart'),{type:'bar',data:{labels:Object.keys(regDel),datasets:[{data:Object.values(regDel).map(v=>Math.round(v/1e6*10)/10),backgroundColor:[BLUE,AQUA,AMB,VIO],borderRadius:4}]},options:{...baseOpts,indexAxis:'y',scales:{x:{grid:{color:gridC},ticks:{color:labelC,font:{size:10},callback:v=>v+'M'}},y:{grid:{display:false},ticks:{color:labelC,font:{size:11}}}}}});
+
+new Chart(document.getElementById('modelChart'),{type:'bar',data:{labels:Object.keys(modDel),datasets:[{data:Object.values(modDel).map(v=>Math.round(v/1e6*10)/10),backgroundColor:[BLUE,AQUA,AMB,GRN,VIO],borderRadius:4}]},options:{...baseOpts,indexAxis:'y',scales:{x:{grid:{color:gridC},ticks:{color:labelC,font:{size:10},callback:v=>v+'M'}},y:{grid:{display:false},ticks:{color:labelC,font:{size:11}}}}}});
+
+new Chart(document.getElementById('priceChart'),{type:'line',data:{labels:Object.keys(priceByYr),datasets:[{data:Object.values(priceByYr),borderColor:AQUA,borderWidth:2,pointBackgroundColor:AQUA,pointRadius:4,tension:.3,fill:false}]},options:{...baseOpts,scales:{x:{grid:{display:false},ticks:{color:labelC,font:{size:11}}},y:{grid:{color:gridC},ticks:{color:labelC,font:{size:11},callback:v=>'$'+Math.round(v/1000)+'k'}}}}});
+
+const models=['Ridge','Lasso','Random forest','Grad. boost','XGBoost (tuned)'];
+const r2s=[0.9984,0.9984,0.9992,0.9993,0.9994];
+new Chart(document.getElementById('modelCompChart'),{type:'bar',data:{labels:models,datasets:[{data:r2s,backgroundColor:[gridC,gridC,AQUA,AQUA,BLUE],borderRadius:4}]},options:{...baseOpts,scales:{x:{grid:{display:false},ticks:{color:labelC,font:{size:10}}},y:{grid:{color:gridC},min:0.997,ticks:{color:labelC,font:{size:11},callback:v=>v.toFixed(4)}}}}});
+
+const fiC=document.getElementById('fi-container');
+const maxFi=0.962;
+Object.entries(fi).forEach(([k,v])=>{
+  const pct=Math.round(v/maxFi*100);
+  fiC.innerHTML+=`<div class="fi-row"><div class="fi-label">${k}</div><div class="fi-bar-bg"><div class="fi-bar" style="width:${Math.max(pct,1)}%"></div></div><div class="fi-val">${(v*100).toFixed(2)}%</div></div>`;
+});
+
+const months=60;
+const tsLabels=[];const startY=2015;
+for(let i=0;i<tsData.length;i++){const y=startY+Math.floor(i/12);const m=i%12+1;tsLabels.push(y+'-'+(m<10?'0':'')+m);}
+const skip=Math.floor(tsLabels.length/12);
+new Chart(document.getElementById('tsChart'),{type:'line',data:{labels:tsLabels,datasets:[{data:tsData,borderColor:BLUE,borderWidth:1.5,pointRadius:0,tension:.3,fill:false}]},options:{...baseOpts,scales:{x:{grid:{display:false},ticks:{color:labelC,font:{size:10},maxTicksLimit:12,autoSkip:true}},y:{grid:{color:gridC},ticks:{color:labelC,font:{size:10},callback:v=>Math.round(v/1000)+'k'}}}}});
+
+const fcGrid=document.getElementById('fc-grid');
+const total=Object.values(fc2026).reduce((a,b)=>a+b,0);
+const max2026=Math.max(...Object.values(fc2026));
+Object.entries(fc2026).forEach(([m,v])=>{
+  const intensity=Math.round((v/max2026)*80+20);
+  fcGrid.innerHTML+=`<div class="fc-cell"><div class="fc-month">${m}</div><div class="fc-num">${Math.round(v/1000)}k</div></div>`;
+});
+
+function switchTab(id){
+  document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.toggle('active',['eda','models','features','forecast'][i]===id)});
+  document.querySelectorAll('.panel').forEach(p=>{p.classList.toggle('active',p.id==='panel-'+id)});
+}
+</script>
